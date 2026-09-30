@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FSM Designer — visual finite automata and state machine tool">
+  <title>FSM Designer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/canvas.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <h1>FSM Designer</h1>
+          <p>Visual Finite Automata &amp; State Machine Tool</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <label class="machine-picker">
+          <span>Machine Type</span>
+          <select id="machineType">
+            <option value="DFA">DFA</option>
+            <option value="NFA">NFA</option>
+            <option value="ENFA">ε-NFA</option>
+            <option value="MEALY">Mealy Machine</option>
+            <option value="MOORE">Moore Machine</option>
+          </select>
+        </label>
+        <button class="btn primary" id="newBtn" title="New FSM">＋ <span>New</span></button>
+        <button class="btn success" id="saveBtn" title="Save the FSM canvas as PNG">▣ <span>Save PNG</span></button>
+        <button class="btn neutral" id="clearBtn" title="Clear the current FSM">⌫ <span>Clear</span></button>
+        <button class="btn neutral" id="validateBtn" title="Validate the current machine">✓ <span>Validate</span></button>
+        <button class="icon-btn theme-light" id="themeToggle" title="Toggle light/dark mode" aria-label="Toggle theme">☼</button>
+        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">⚙</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar panel-scroll">
+        <section>
+          <div class="section-heading">Machine Types</div>
+          <div class="machine-list" id="machineList">
+            <button class="machine-card active" data-machine="DFA"><span class="machine-dot blue"></span><strong>DFA</strong><span>⌘</span></button>
+            <button class="machine-card" data-machine="NFA"><span class="machine-dot purple"></span><strong>NFA</strong><span>♧</span></button>
+            <button class="machine-card" data-machine="ENFA"><span class="machine-dot green"></span><strong>ε-NFA</strong><span>ε</span></button>
+            <button class="machine-card" data-machine="MEALY"><span class="machine-dot orange"></span><strong>Mealy Machine</strong><span>◫</span></button>
+            <button class="machine-card" data-machine="MOORE"><span class="machine-dot pink"></span><strong>Moore Machine</strong><span>◫</span></button>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-heading">Tools</div>
+          <div class="tool-list">
+            <button class="tool-btn" id="addStateTool"><span class="tool-icon">Q+</span><span>Add States</span><kbd>S</kbd></button>
+            <button class="tool-btn" id="addTransitionTool"><span class="tool-icon">δ</span><span>Quick Transition</span><kbd>T</kbd></button>
+            <button class="tool-btn" id="addTransitionDialogTool"><span class="tool-icon">＋δ</span><span>Add Transition</span></button>
+            <button class="tool-btn" id="setStartTool"><span class="tool-icon">q₀</span><span>Set Start / Initial State</span></button>
+            <button class="tool-btn final-only-tool" id="setFinalTool"><span class="tool-icon">F</span><span>Set Final / Accepting State</span></button>
+            <button class="tool-btn" id="deleteTool"><span class="tool-icon">×</span><span>Delete Selected</span><kbd>Del</kbd></button>
+            <button class="tool-btn" id="moveTool"><span class="tool-icon">✥</span><span>Pan Canvas / Move View</span></button>
+            <button class="tool-btn" id="zoomInTool"><span class="tool-icon">⌕</span><span>Zoom In</span></button>
+            <button class="tool-btn" id="zoomOutTool"><span class="tool-icon">⊖</span><span>Zoom Out</span></button>
+            <button class="tool-btn" id="resetViewTool"><span class="tool-icon">⟳</span><span>Reset View</span></button>
+          </div>
+        </section>
+
+        <section class="config-section">
+          <div class="section-heading">Alphabets</div>
+          <div class="mini-label">INPUT ALPHABET</div>
+          <div class="chips" id="inputAlphabetChips"></div>
+          <div class="inline-add">
+            <input id="inputSymbolField" maxlength="20" placeholder="symbol">
+            <button class="small-btn" id="addInputSymbolBtn">＋</button>
+          </div>
+
+          <div id="outputAlphabetSection">
+            <div class="mini-label">OUTPUT ALPHABET</div>
+            <div class="chips" id="outputAlphabetChips"></div>
+            <div class="inline-add">
+              <input id="outputSymbolField" maxlength="20" placeholder="output">
+              <button class="small-btn" id="addOutputSymbolBtn">＋</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="formal-section">
+          <div class="section-heading">Formal Definition</div>
+          <div id="formalDefinition" class="formal-definition"></div>
+        </section>
+
+        <section class="advanced">
+          <div class="section-heading">Advanced Tools</div>
+          <select id="conversionSelect">
+            <option value="">Convert current machine…</option>
+            <option value="NFA_DFA">NFA → DFA</option>
+            <option value="ENFA_NFA">ε-NFA → NFA</option>
+            <option value="ENFA_DFA">ε-NFA → DFA</option>
+            <option value="MEALY_MOORE">Mealy → Moore</option>
+            <option value="MOORE_MEALY">Moore → Mealy</option>
+          </select>
+          <button class="tool-btn compact" id="convertBtn"><span class="tool-icon">⇄</span><span>Run Conversion</span></button>
+        </section>
+      </aside>
+
+      <section class="center-column">
+        <div id="quickInstruction" class="quick-instruction hidden">⚡ Quick Transition: click a source state, then a destination state.</div>
+        <div class="canvas-toolbar">
+          <div class="toolbar-group">
+            <button class="icon-btn small" id="undoBtn" title="Undo">↶</button>
+            <button class="icon-btn small" id="redoBtn" title="Redo">↷</button>
+          </div>
+          <div class="canvas-help">Click to select • Drag a state to move it • Drag empty canvas to pan • Double-click a state to edit</div>
+          <div class="toolbar-group">
+            <button class="zoom-btn" id="zoomMinus">−</button>
+            <span id="zoomLabel">100%</span>
+            <button class="zoom-btn" id="zoomPlus">＋</button>
+            <button class="icon-btn small" id="fullscreenBtn" title="Fullscreen canvas">⛶</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap" id="canvasWrap">
+          <svg id="fsmCanvas" class="fsm-canvas" role="application" aria-label="FSM canvas">
+            <defs>
+              <pattern id="gridPattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                <path d="M 24 0 L 0 0 0 24" fill="none" stroke="currentColor" stroke-width="1" opacity=".08"/>
+              </pattern>
+              <marker id="arrowHead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" class="arrow-fill"/>
+              </marker>
+              <filter id="activeGlow" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <rect class="canvas-bg" x="0" y="0" width="100%" height="100%"></rect>
+            <rect class="canvas-grid" x="0" y="0" width="100%" height="100%" fill="url(#gridPattern)"></rect>
+            <g id="canvasViewport">
+              <g id="transitionLayer"></g>
+              <g id="stateLayer"></g>
+              <g id="startArrowLayer"></g>
+            </g>
+          </svg>
+          <div class="canvas-empty" id="canvasEmpty">
+            <div class="empty-icon">◌</div>
+            <strong>Build your state machine</strong>
+            <span>Add states and transitions from the left panel.</span>
+          </div>
+          <div class="canvas-hint">Wheel: zoom • Drag empty canvas / Middle mouse / Space + drag: pan</div>
+        </div>
+
+        <section class="bottom-area">
+          <div class="bottom-main card">
+            <div class="tabs" role="tablist">
+              <button class="tab active" data-tab="simulation">Simulation</button>
+              <button class="tab" data-tab="step">Step-by-Step</button>
+              <button class="tab" data-tab="table">Transition Table</button>
+              <button class="tab" data-tab="validation">Validation</button>
+            </div>
+
+            <div class="tab-panel active" id="tab-simulation">
+              <div class="simulation-row">
+                <div class="input-grow">
+                  <label for="inputString">Input String</label>
+                  <input id="inputString" placeholder="e.g. 0101 or abba" autocomplete="off">
+                </div>
+                <button class="btn primary run-btn" id="runBtn">▶ <span>Run</span></button>
+                <button class="btn neutral" id="stepBtn">→ <span>Step</span></button>
+                <button class="btn neutral" id="resetSimBtn">⟳ <span>Reset</span></button>
+              </div>
+              <div id="resultBox" class="result-box hidden"></div>
+              <div id="outputSummary" class="output-summary hidden"></div>
+            </div>
+
+            <div class="tab-panel" id="tab-step">
+              <div id="stepSummary" class="step-summary empty">Step-by-Step shows how the machine reads one input symbol at a time. Run or step through an input to see the current symbol, current state, transition, and next state.</div>
+              <div class="table-wrap"><table id="traceTable"><thead></thead><tbody></tbody></table></div>
+            </div>
+
+            <div class="tab-panel" id="tab-table">
+              <div class="step-summary"><b>Transition Table</b> — a matrix view of the current machine using the formal alphabet and state set.</div>
+              <div id="transitionMatrix" class="table-wrap"></div>
+            </div>
+
+            <div class="tab-panel" id="tab-validation">
+              <div id="validationPanel" class="validation-panel empty">Click Validate to inspect the current machine.</div>
+            </div>
+          </div>
+
+          <aside class="info-card card">
+            <div class="card-title">State / Tuple Symbols</div>
+            <div class="legend-item"><span class="legend-state start"></span><span>Start / Initial State (q₀)</span><small id="startLegend">—</small></div>
+            <div class="legend-item final-only-ui"><span class="legend-state final"></span><span>Final / Accepting State (F)</span><small id="finalLegend">—</small></div>
+            <div class="legend-item"><span class="legend-state normal"></span><span>State Set (Q)</span></div>
+            <div class="legend-item"><span class="legend-arrow">➜</span><span>Initial-State Marker</span></div>
+            <div class="divider"></div>
+            <div class="card-title small-title">Tuple Symbols</div>
+            <div class="legend-item"><span class="legend-arrow">→</span><span>Transition Function (δ)</span></div>
+            <div class="legend-item"><span class="loop-symbol">↻</span><span>Self-loop transition</span></div>
+          </aside>
+        </section>
+      </section>
+
+      <aside class="properties card" id="propertiesPanel">
+        <div class="property-tabs">
+          <button class="property-tab active" data-property-tab="state">State Properties</button>
+          <button class="property-tab" data-property-tab="transition">Transition Properties</button>
+        </div>
+
+        <div class="property-content active" id="stateProperties">
+          <div id="stateEditorEmpty" class="empty-property">
+            <div class="empty-icon">◉</div>
+            <strong>Select a state</strong>
+            <span>Its properties will appear here.</span>
+          </div>
+          <div id="stateEditor" class="hidden">
+            <label>State Name</label>
+            <input id="stateNameInput" maxlength="60">
+            <label class="check-row"><input type="checkbox" id="stateStartCheck"><span>Start / Initial State (q₀)</span></label>
+            <label class="check-row final-only-ui"><input type="checkbox" id="stateFinalCheck"><span>Final / Accepting State (F)</span></label>
+            <div id="stateOutputEditor">
+              <label>Output <small>(Moore Machine)</small></label>
+              <input id="stateOutputInput" maxlength="40" placeholder="e.g. A">
+            </div>
+            <div class="position-grid">
+              <div><label>X</label><input id="stateXInput" type="number"></div>
+              <div><label>Y</label><input id="stateYInput" type="number"></div>
+            </div>
+            <button class="btn neutral full" id="updatePositionBtn">⌖ Update Position</button>
+            <button class="danger-btn full" id="deleteStateBtn">▥ Delete State</button>
+          </div>
+        </div>
+
+        <div class="property-content" id="transitionProperties">
+          <div id="transitionEditorEmpty" class="empty-property">
+            <div class="empty-icon">→</div>
+            <strong>Select a transition</strong>
+            <span>Its properties will appear here.</span>
+          </div>
+          <div id="transitionEditor" class="hidden">
+            <label>From State</label>
+            <select id="transitionFromInput"></select>
+            <label>Input Symbol</label>
+            <div class="symbol-editor-row"><input id="transitionSymbolInput" maxlength="30"><button class="small-btn hidden" id="epsilonSymbolBtn" type="button" title="Set ε (epsilon)">ε</button></div>
+            <div id="transitionOutputEditor">
+              <label>Output Symbol <small>(Mealy)</small></label>
+              <input id="transitionOutputInput" maxlength="40">
+            </div>
+            <label>To State</label>
+            <select id="transitionToInput"></select>
+            <button class="btn primary full" id="updateTransitionBtn">✓ Update Transition</button>
+            <button class="danger-btn full" id="deleteTransitionBtn">× Delete Transition</button>
+            <div id="transitionSummary" class="transition-summary hidden"></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <div><strong id="statusMachine">DFA</strong><span>│</span><span>States: <b id="stateCount">0</b></span><span>│</span><span>Transitions: <b id="transitionCount">0</b></span></div>
+      <div class="status-ready"><span class="status-dot"></span><span id="statusText">Ready</span></div>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head">
+        <h2 id="modalTitle">Add State</h2>
+        <button class="icon-btn small" id="modalClose">×</button>
+      </div>
+      <div id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
